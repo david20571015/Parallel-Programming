@@ -101,8 +101,26 @@ float arraySumVector(float *values, int N) {
   // PP STUDENTS TODO: Implement your vectorized version of arraySumSerial here
   //
 
+  __pp_mask maskAll = _pp_init_ones();
+
+  int currentSize;
+  float sum = 0.0;
+  __pp_vec_float compressed;
+
   for (int i = 0; i < N; i += VECTOR_WIDTH) {
+    currentSize = VECTOR_WIDTH;
+    _pp_vload_float(compressed, values + i, maskAll);
+
+    while (currentSize > 1) {
+      // [0 1 2 3] -> [0+1 0+1 2+3 2+3]
+      _pp_hadd_float(compressed, compressed);
+      // [0+1 0+1 2+3 2+3] -> [0+1 2+3 0+1 2+3]
+      _pp_interleave_float(compressed, compressed);
+
+      currentSize /= 2;
+    }
+    sum += compressed.value[0];
   }
 
-  return 0.0;
+  return sum;
 }
