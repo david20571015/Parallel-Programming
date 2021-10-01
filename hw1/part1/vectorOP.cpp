@@ -45,7 +45,51 @@ void clampedExpVector(float *values, int *exponents, float *output, int N) {
   // Your solution should work for any value of
   // N and VECTOR_WIDTH, not just when VECTOR_WIDTH divides N
   //
+
+  // constant
+  __pp_vec_int allZeros = _pp_vset_int(0), allOnes = _pp_vset_int(1);
+  __pp_vec_float upperBound = _pp_vset_float(9.999999f);
+
+  __pp_vec_int y;
+  __pp_vec_float x, result;
+  __pp_mask maskAll, maskZeroExp, maskNotZeroExp;
+
   for (int i = 0; i < N; i += VECTOR_WIDTH) {
+    // mask for all valiable elements
+    int maskSize = min(N - i, VECTOR_WIDTH);
+    maskAll = _pp_init_ones(maskSize);
+
+    // x = values, y = exponents
+    _pp_vload_float(x, values + i, maskAll);
+    _pp_vload_int(y, exponents + i, maskAll);
+
+    // result = 1.
+    _pp_vset_float(result, 1.f, maskAll);
+
+    // update maskZeroExp and maskNotZeroExp
+    _pp_veq_int(maskZeroExp, y, allZeros, maskAll);
+    maskNotZeroExp = _pp_mask_not(maskZeroExp);
+    maskNotZeroExp = _pp_mask_and(maskNotZeroExp, maskAll);
+
+    while (_pp_cntbits(maskZeroExp) < maskSize) {
+      // result *= x
+      _pp_vmult_float(result, result, x, maskNotZeroExp);
+      // y--
+      _pp_vsub_int(y, y, allOnes, maskNotZeroExp);
+
+      // update maskZeroExp and maskNotZeroExp
+      _pp_veq_int(maskZeroExp, y, allZeros, maskAll);
+      maskNotZeroExp = _pp_mask_not(maskZeroExp);
+      maskNotZeroExp = _pp_mask_and(maskNotZeroExp, maskAll);
+    }
+
+    // result = max(result, 9.999999f)
+    __pp_mask maskClamp;
+    _pp_vgt_float(maskClamp, result, upperBound, maskAll);
+    _pp_vmove_float(result, upperBound, maskClamp);
+
+    // output = result
+    _pp_vstore_float(output + i, result, maskAll);
   }
 }
 
