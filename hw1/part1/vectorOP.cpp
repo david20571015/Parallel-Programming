@@ -68,6 +68,7 @@ void clampedExpVector(float *values, int *exponents, float *output, int N) {
 
     // update maskZeroExp and maskNotZeroExp
     _pp_veq_int(maskZeroExp, y, allZeros, maskAll);
+    maskZeroExp = _pp_mask_and(maskZeroExp, maskAll);
     maskNotZeroExp = _pp_mask_not(maskZeroExp);
     maskNotZeroExp = _pp_mask_and(maskNotZeroExp, maskAll);
 
